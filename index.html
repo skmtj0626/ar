@@ -1,17 +1,53 @@
 <!DOCTYPE html>
-<html lang="ja">
-
+<html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <script src="https://aframe.io/releases/1.8.0/aframe.min.js"></script>
 </head>
-
 <body>
     <a-scene>
-        <a-box position="0 0 -3" color="skyblue">
-        </a-box>
+         <a-sky color="skyblue"></a-sky>
+          <a-plane
+           rotation="-90 0 0"
+           width="20"
+           height="20"
+           color="white">
+        </a-plane>
+        <a-entity id="snowman" position="0 0 -5">
+            <a-sphere
+                position="0 2.4 0"
+                radius="0.7">
+            </a-sphere>
+            <a-sphere 
+                position="0 1 0">
+            </a-sphere>
+            <a-sphere
+                position="0.2 2.5 0.6"
+                radius="0.1"
+                color="black">
+            </a-sphere>
+            <a-sphere
+                position="-0.2 2.5 0.6"
+                radius="0.1"
+                color="black">
+            </a-sphere>
+            <a-box
+                position="0 2.1 0.6"
+                width="0.4"
+                height="0.1"
+                depth="0.1"
+                color="black">
+            </a-box>
+            <a-cone
+               position="0 2.5 0"
+               radius-top="0.3"
+               radius-bottom="0.5"
+               height="2"
+               color="red"></a-cone>
+        </a-entity>
+        <a-camera position="0 2 0"></a-camera>
     </a-scene>
 </body>
-
 </html>
