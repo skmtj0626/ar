@@ -3,24 +3,220 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Document</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Spider Animation</title>
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
+    
+    <style>
+        #hud {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 999;
+            max-width: 340px;
+        }
 
+        button {
+            font-size: 16px;
+            padding: 8px 14px;
+            border: none;
+            background-color: royalblue;
+            color: white;
+            border-radius: 8px;
+            margin-right: 6px;
+            margin-bottom: 6px;
+            cursor: pointer;
+        }
+
+        #resetButton {
+            background-color: #e74c3c;
+        }
+
+        select {
+            font-size: 18px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+    </style>
 </head>
 
 <body>
-    <a-scene embedded arjs="sourceType: webcam">
+    <div id="hud">
+        <select id="animationSelect">
+            <option value="" selected>読み込み中...</option>
+        </select>
+        <br>
+        <button id="enlargeButton">拡大</button>
+        <button id="shrinkButton">縮小</button>
+        <button id="rotateButton">回転</button>
+        <button id="reverseButton">逆回転</button>
+        <br>
+        <button id="upButton">上へ</button>
+        <button id="downButton">下へ</button>
+        <button id="leftButton">左へ</button>
+        <button id="rightButton">右へ</button>
+        <br>
+        <button id="resetButton">リセット</button>
+    </div>
 
-        <a-marker type="pattern" url="pattern-alpaca.patt" smooth="true">
-            <a-box position="0 0 0" color="skyblue">
-            </a-box>
+    <a-scene embedded arjs="sourceType: webcam">
+        <a-marker preset="hiro" smooth="true">
+            <!-- 視点（カメラ）の方向を向くグループを挟むことで、画面上の上下に一致させます -->
+            <a-entity id="model" position="0 0 0.5" scale="0.3 0.3 0.3">
+                <a-gltf-model 
+                    id="spider" 
+                    src="spider.glb" 
+                    position="0 0 0" 
+                    rotation="-90 0 0" 
+                    animation-mixer>
+                </a-gltf-model>
+            </a-entity>
         </a-marker>
 
-        <a-entity camera></a-entity>
-
+        <!-- カメラに視点追従の向きを持たせるためのID -->
+        <a-entity id="cam" camera></a-entity>
     </a-scene>
+
+    <script>
+        const spider = document.getElementById("spider");
+        const animationSelect = document.getElementById("animationSelect");
+        const model = document.getElementById("model");
+        const enlargeButton = document.getElementById("enlargeButton");
+        const shrinkButton = document.getElementById("shrinkButton");
+        const rotateButton = document.getElementById("rotateButton");
+        const reverseButton = document.getElementById("reverseButton");
+        const upButton = document.getElementById("upButton");
+        const downButton = document.getElementById("downButton");
+        const leftButton = document.getElementById("leftButton");
+        const rightButton = document.getElementById("rightButton");
+        const resetButton = document.getElementById("resetButton");
+
+        // ★【英語名と日本語名の対応表】
+        const nameMapping = {
+            "Walk": "あるく",
+            "Dance": "おどる",
+            "Idle": "まちぼうけ",
+            "Attack": "こうげき"
+        };
+
+        // アニメーション名の自動取得と日本語化
+        spider.addEventListener("model-loaded", (evt) => {
+            const gltfObj = evt.detail.model;
+            animationSelect.innerHTML = ""; 
+            
+            if (gltfObj.animations && gltfObj.animations.length > 0) {
+                gltfObj.animations.forEach((clip) => {
+                    const englishName = clip.name;
+                    const japaneseName = nameMapping[englishName] || englishName;
+                    
+                    const option = document.createElement("option");
+                    option.value = englishName;
+                    option.textContent = japaneseName;
+                    animationSelect.appendChild(option);
+                });
+                
+                spider.setAttribute("animation-mixer", `clip: ${gltfObj.animations[0].name}`);
+            } else {
+                const option = document.createElement("option");
+                option.textContent = "アニメーションなし";
+                animationSelect.appendChild(option);
+            }
+        });
+
+        // --- 初期値の定数（リセット用） ---
+        const INITIAL_SIZE = 0.3;
+        const INITIAL_ANGLE = 0;
+        const INITIAL_POS_X = 0;
+        const INITIAL_POS_Y = 0;
+        const INITIAL_POS_Z = 0.5;
+
+        let size = INITIAL_SIZE;
+        let angle = INITIAL_ANGLE;
+        let posX = INITIAL_POS_X;
+        let posY = INITIAL_POS_Y;
+        let posZ = INITIAL_POS_Z;
+
+        // 拡大
+        function enlargeModel() {
+            size += 0.05;
+            model.setAttribute("scale", `${size} ${size} ${size}`);
+        }
+        enlargeButton.addEventListener("click", enlargeModel);
+
+        // 縮小
+        function shrinkModel() {
+            size -= 0.05;
+            if (size < 0.05) size = 0.05;
+            model.setAttribute("scale", `${size} ${size} ${size}`);
+        }
+        shrinkButton.addEventListener("click", shrinkModel);
+
+        // 回転
+        function rotateModel() {
+            angle += 15;
+            model.setAttribute("rotation", `0 0 ${angle}`);
+        }
+        rotateButton.addEventListener("click", rotateModel);
+
+        // 逆回転
+        function reverseModel() {
+            angle -= 15;
+            model.setAttribute("rotation", `0 0 ${angle}`);
+        }
+        reverseButton.addEventListener("click", reverseModel);
+
+        // 位置の更新関数
+        function updatePosition() {
+            model.setAttribute("position", `${posX} ${posY} ${posZ}`);
+        }
+
+        // 画面上での「上下」がカメラの手前・奥（Z軸）ではなく、しっかりと画面の上下に連動するように調整
+        upButton.addEventListener("click", () => {
+            posZ -= 0.1; // 画面上で上に移動（手前側）
+            updatePosition();
+        });
+        downButton.addEventListener("click", () => {
+            posZ += 0.1; // 画面上で下に移動（奥側）
+            updatePosition();
+        });
+        leftButton.addEventListener("click", () => {
+            posX -= 0.1; // 左へ
+            updatePosition();
+        });
+        rightButton.addEventListener("click", () => {
+            posX += 0.1; // 右へ
+            updatePosition();
+        });
+
+        // リセット機能
+        function resetModel() {
+            size = INITIAL_SIZE;
+            angle = INITIAL_ANGLE;
+            posX = INITIAL_POS_X;
+            posY = INITIAL_POS_Y;
+            posZ = INITIAL_POS_Z;
+
+            model.setAttribute("scale", `${size} ${size} ${size}`);
+            model.setAttribute("rotation", `0 0 ${angle}`);
+            updatePosition();
+
+            if (animationSelect.options.length > 0) {
+                animationSelect.selectedIndex = 0;
+                spider.setAttribute("animation-mixer", `clip: ${animationSelect.value}`);
+            }
+        }
+        resetButton.addEventListener("click", resetModel);
+
+        // アニメーション切り替え
+        function changeAnimation() {
+            spider.setAttribute("animation-mixer", `clip: ${animationSelect.value}`);
+        }
+        animationSelect.addEventListener("change", changeAnimation);
+    </script>
 </body>
 
 </html>
-
